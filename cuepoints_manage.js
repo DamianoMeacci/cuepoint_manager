@@ -1,12 +1,14 @@
 /*
-cuepoints-manager_public_v01 script (2024/07/18)
-Developped in Ableton Live 12.0.10 and Max 8.6.4
+cuepoints-manager_public_v2.0 script (2024/11/20)
+Developped in Ableton Live 12.0.25 and Max 8.6.5
 */
 
 autowatch = 1;
 outlets = 4;
 
-//CONSTANTS
+/*CONSTANTS
+in js (interprete di js in Max non è definito const!!!
+*/
 
 var FUNCTION_CALL_INTERVALL_ms = 20;
 var DEBUG = 0;
@@ -27,7 +29,13 @@ var listener;
 
 var umenuName = "umenu_cues"; // umenu "scripting name" - the umenu is used to select the active cue
 var umenuName2 = "umenu_cues2"; // umenu "scripting name" - the umenu is used for jump function
-var dictName = "dict_cues"; // dict name - the dict is used to save the data in Live session
+var dictName = "dict_cues"; // dict name - the dict is used to save the data in Live session 
+/*
+dict_cue structure:
+key cuepoint_name+cuepoint_id
+data: cuepoint_name, flag_state, cuepoint_id, cuepoint_index, cuepoint_position_in_beat
+
+*/
 
 if (jsarguments.length == 3) {
 	umenuName = jsarguments[1];
@@ -343,8 +351,8 @@ function update_dict() {
 	stampa();
 	dpost("DICT: " + dict_active_cues.name);
 	for (var i=0; i<dataA.length; i++) {
-		dpost("key: "+dataA[i][0]+" "+dataA[i][1]+" "+dataA[i][2]+" "+dataA[i][3]+" "+dataA[i][4]);
-		dict_active_cues.set(dataA[i][0].toString(), dataA[i][1], dataA[i][2], dataA[i][3], dataA[i][4]);
+		dpost("key: "+dataA[i][0]+dataA[i][2]+" "+dataA[i][0]+" "+dataA[i][1]+" "+dataA[i][2]+" "+dataA[i][3]+" "+dataA[i][4]);
+		dict_active_cues.set((dataA[i][0]+dataA[i][2]).toString(), dataA[i][0].toString(), dataA[i][1], dataA[i][2], dataA[i][3], dataA[i][4]);
 	}
 }
 
@@ -387,7 +395,7 @@ function load_dict(){
 		
 	for (var i = 0; i < keys.length; i++){
 		temp = dict_active_cues.get(keys[i]);
-		dataA.push([keys[i] , temp[0], temp[1], temp[2], temp[3]]); //cuepoint_name, flag_state, cuepoint_id, cuepoint_index, cuepoint_position_in_beat
+		dataA.push([temp[0], temp[1], temp[2], temp[3]], temp[4]); //cuepoint_name, flag_state, cuepoint_id, cuepoint_index, cuepoint_position_in_beat
 	}
 
 }
@@ -469,9 +477,7 @@ function goto_prev(){
 }
 
 function jump_cue(arg) {
-	if (transportBC) {
-		outlet(3, "jump_cue", arg); // to broadcast
-	}
+	outlet(3, "jump_cue", arg); // to broadcast
 	stop();
 	var jumpAPI = new LiveAPI("live_set cue_points " + dataA[(jumpA[arg])][3]);
 	jumpAPI.call("jump");
@@ -492,7 +498,7 @@ function GO(){
 		}
 		dpost("current_beat: "+current_beat);
 		next_cue = find_next_cue_beat();
-		current_cue = "MANUAL";
+		current_cue = "from cursor";
 		display_next_cue();
 	} else if (next_cue != "none") {
 		var jumpAPI = new LiveAPI("live_set cue_points " + dataA[next_cue][3]);
@@ -572,7 +578,7 @@ function display_next_cue(){
 		outlet(0,"current", current_cue);
 		outlet(2, -1);
 	} else if (cursorStart == 1) {
-		outlet(0,"next", "MANUAL");
+		outlet(0,"next", "next from cursor");
 		outlet(0,"current", " ");
 		outlet(2, -1);
 	} else {
